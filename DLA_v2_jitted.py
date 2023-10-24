@@ -102,7 +102,7 @@ def jitMovePoint(adj_points):
     return new_pos
 
  
-def jitGrow(points, boundary, radius, dr):
+def jitGrow(points, boundary, radius, dr, no_points = 1):
     '''
     Grow cluster by picking a random point on the perimeter of the initial circle.
     Then move point to one of its neighbours (i.e an integer step) until one of its
@@ -112,12 +112,14 @@ def jitGrow(points, boundary, radius, dr):
     Once the particle is registered as being stuck to the cluster, the list of points
     of the cluster is updated, the radius of the spawn circle expanded and the list
     of points making the spawn circle recalculated.
+    no_points determines the number of points you wish to add to the cluster.
 
     Input:
     points: list(tuple(int))
     boundary: list(tuple(int))
     radius: float
     dr: int
+    no_points: int, default set to 1
 
     Return:
     points: list(tuple(int))
@@ -125,18 +127,18 @@ def jitGrow(points, boundary, radius, dr):
     boundary: list(tuple(int))
     '''
     ticker = 0
-    while ticker < no_points:
-        spawn = jitRandPoint(boundary)
-        adj_points = jitGetNeighbours(radius, spawn)
-        while not jitCheckStick(points, adj_points):
-            spawn = jitMovePoint(adj_points)
-            if spawn[0]**2 + spawn[1]**2 > (radius + dr)**2:
+    while ticker < no_points: #Break loop once no_points have been added to cluster
+        spawn = jitRandPoint(boundary) #spawn random point on boundary of spawn circle
+        adj_points = jitGetNeighbours(radius, spawn) # calculate neighbouring points
+        while not jitCheckStick(points, adj_points): #Make sure none of the spawn point's neighbouring points are in the cluster
+            spawn = jitMovePoint(adj_points) #If False, move point to one of its neighbouring points
+            if spawn[0]**2 + spawn[1]**2 > (radius + dr)**2: #If exit the circle of radius radius + dr, relaunch particle on boundary 
                 spawn = jitRandPoint(boundary)
             adj_points = jitGetNeighbours(radius, spawn)
-        points.append(spawn)
-        ticker += 1
+        points.append(spawn) #Once Exiting the loop, append point to list of points within the cluster
+        ticker += 1 #Update number of points added
         
-        if distance(*spawn) + dr > radius:
+        if distance(*spawn) + dr > radius: #If the newly added point is too close to the radius of the circle, update spawn circle and radius
             radius = int(distance(*spawn)) + dr
             boundary = jitCircleBound(radius)
         
@@ -148,9 +150,9 @@ class DLA:
     def __init__(self, dr = 15):
         self.dr = dr
         self.radius = 1+dr
-        self.points = [(0,0)]
+        self.points = [(0,0)] #Initialise with default single seed particle at origin
         self.boundary = []
-        for x in range(-self.radius, self.radius+1):
+        for x in range(-self.radius, self.radius+1): #Initialise spawn circle boundary 
             for y in range(-self.radius, self.radius+1):
                 if (int(x*x + y*y) <= self.radius**2 and (x, y) != (0,0)):
                     self.boundary.append((x, y))
